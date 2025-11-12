@@ -22,51 +22,28 @@ Coming soon after initial release.
 
 ### Manual Installation
 
-1. Clone the repository:
-```bash
-git clone https://github.com/username/gnome-browser-switcher.git
-cd gnome-browser-switcher
-```
-
-2. Copy files to the extensions directory:
-```bash
-mkdir -p ~/.local/share/gnome-shell/extensions/browser-switcher@gnome-shell-extensions
-cp -r * ~/.local/share/gnome-shell/extensions/browser-switcher@gnome-shell-extensions/
-```
-
-3. Enable the extension:
-```bash
-gnome-extensions enable browser-switcher@gnome-shell-extensions
-```
-
-4. Restart Gnome Shell:
-   - On X11: Press `Alt+F2`, type `r`, and press Enter
-   - On Wayland: Log out and log back in
-
-### Installation from ZIP Package
-
-If you have a ZIP package:
+Download the latest release ZIP file from [Releases](https://github.com/totoshko88/browser-switcher/releases) and install:
 
 ```bash
-gnome-extensions install browser-switcher@gnome-shell-extensions.zip
-gnome-extensions enable browser-switcher@gnome-shell-extensions
+gnome-extensions install browser-switcher@totoshko88.github.io.shell-extension.zip
+gnome-extensions enable browser-switcher@totoshko88.github.io
 ```
+
+Then restart Gnome Shell:
+- On X11: Press `Alt+F2`, type `r`, and press Enter
+- On Wayland: Log out and log back in
 
 ### Uninstallation
 
 ```bash
-gnome-extensions disable browser-switcher@gnome-shell-extensions
-gnome-extensions uninstall browser-switcher@gnome-shell-extensions
+gnome-extensions disable browser-switcher@totoshko88.github.io
+gnome-extensions uninstall browser-switcher@totoshko88.github.io
 ```
 
 ## Requirements
 
 - Gnome Shell 45 or 46
 - xdg-utils (typically pre-installed)
-
-## Development
-
-See [.kiro/specs/gnome-browser-switcher/](.kiro/specs/gnome-browser-switcher/) for detailed requirements and design documentation.
 
 ## License
 
