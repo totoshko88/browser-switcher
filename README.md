@@ -57,4 +57,4 @@ Contributions welcome! Please ensure:
 - Code follows existing style
 - Extension remains simple and lightweight
 - No external dependencies added
-- Tested on Gnome Shell 45 and 46
+- Tested on Gnome Shell 45 and 49
