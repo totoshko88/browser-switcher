@@ -137,21 +137,16 @@ class BrowserManager {
     }
 
     /**
-     * Gets the current default browser
+     * Gets the current default browser synchronously
+     * Note: This is called during initialization and needs to be sync
      * @returns {string|null} Browser ID (desktop file name) or null if not found
      */
     getCurrentDefaultBrowser() {
-        // Try xdg-settings first using spawn_sync with proper argument array
+        // Try xdg-settings using command line
         try {
-            const [success, stdout, stderr, exitStatus] = GLib.spawn_sync(
-                null, // working directory
-                ['xdg-settings', 'get', 'default-web-browser'],
-                null, // environment
-                GLib.SpawnFlags.SEARCH_PATH,
-                null  // child setup
-            );
+            const [success, stdout] = GLib.spawn_command_line_sync('xdg-settings get default-web-browser');
             
-            if (success && exitStatus === 0) {
+            if (success) {
                 const browserId = new TextDecoder().decode(stdout).trim();
                 if (browserId) {
                     this._currentDefault = browserId;
@@ -181,53 +176,32 @@ class BrowserManager {
     }
 
     /**
-     * Sets the default browser
+     * Sets the default browser asynchronously
      * @param {string} browserId - Browser ID (desktop file name)
-     * @returns {boolean} True if successful, false otherwise
      */
-    setDefaultBrowser(browserId) {
+    async setDefaultBrowser(browserId) {
         if (!browserId) {
             console.error('Browser Switcher: Invalid browser ID');
-            return false;
+            return;
         }
         
-        // Try xdg-settings first using spawn_sync with proper argument array
         try {
-            const [success, stdout, stderr, exitStatus] = GLib.spawn_sync(
-                null, // working directory
+            // Use async subprocess
+            const proc = Gio.Subprocess.new(
                 ['xdg-settings', 'set', 'default-web-browser', browserId],
-                null, // environment
-                GLib.SpawnFlags.SEARCH_PATH,
-                null  // child setup
+                Gio.SubprocessFlags.NONE
             );
             
-            if (success && exitStatus === 0) {
-                console.log(`Browser Switcher: Set default browser to ${browserId} via xdg-settings`);
+            const success = await proc.wait_check_async(null);
+            
+            if (success) {
+                console.log(`Browser Switcher: Set default browser to ${browserId}`);
                 this._currentDefault = browserId;
                 this._notifyChange(browserId);
-                return true;
-            } else {
-                const errorMsg = stderr ? new TextDecoder().decode(stderr) : 'Unknown error';
-                console.error(`Browser Switcher: xdg-settings set failed: ${errorMsg}`);
+                return;
             }
         } catch (e) {
-            console.error(`Browser Switcher: xdg-settings failed: ${e.message}`);
-        }
-        
-        // Fallback to GSettings
-        try {
-            const settings = new Gio.Settings({
-                schema_id: 'org.gnome.desktop.default-applications.web'
-            });
-            
-            settings.set_string('browser', browserId);
-            console.log(`Browser Switcher: Set default browser to ${browserId} via GSettings`);
-            this._currentDefault = browserId;
-            this._notifyChange(browserId);
-            return true;
-        } catch (e) {
-            console.error(`Browser Switcher: GSettings fallback failed: ${e.message}`);
-            return false;
+            console.error(`Browser Switcher: Failed to set default browser: ${e.message}`);
         }
     }
 

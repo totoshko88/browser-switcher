@@ -18,6 +18,7 @@ class MenuBuilder {
         this._browserManager = browserManager;
         this._menuItems = new Map(); // Map browser ID to menu item
         this._selectionCallback = null;
+        this._timeoutId = null;
         
         // Build initial menu
         this.buildMenu();
@@ -137,9 +138,16 @@ class MenuBuilder {
         // Update the menu to reflect the change
         this.updateCurrentBrowser(browserId);
         
+        // Remove existing timeout if any
+        if (this._timeoutId) {
+            GLib.source_remove(this._timeoutId);
+            this._timeoutId = null;
+        }
+        
         // Close menu after selection (within 500ms as per requirement)
-        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
+        this._timeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
             this._indicator.menu.close();
+            this._timeoutId = null;
             return GLib.SOURCE_REMOVE;
         });
         
@@ -215,6 +223,12 @@ class MenuBuilder {
      * Cleans up resources
      */
     destroy() {
+        // Remove timeout if exists
+        if (this._timeoutId) {
+            GLib.source_remove(this._timeoutId);
+            this._timeoutId = null;
+        }
+        
         this._menuItems.clear();
         this._selectionCallback = null;
         this._indicator = null;
