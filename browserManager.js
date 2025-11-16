@@ -204,6 +204,14 @@ class BrowserManager {
             console.error(`Browser Switcher: Failed to set default browser: ${e.message}`);
         }
     }
+    /**
+     * Returns the cached current default browser.
+     * Use initialize() or getCurrentDefaultBrowser() to fetch/update the value.
+     * @returns {string|null}
+     */
+    getCachedDefaultBrowser() {
+        return this._currentDefault;
+    }
 
     /**
      * Watches for changes to the default browser
