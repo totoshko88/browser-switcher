@@ -27,8 +27,11 @@ class BrowserIndicator extends PanelMenu.Button {
         
         // Initialize with current browser icon (use cached value)
         const currentBrowser = this._browserManager.getCachedDefaultBrowser();
+        console.log(`Browser Switcher Indicator: Initial browser is ${currentBrowser}`);
         if (currentBrowser) {
             this.updateIcon(currentBrowser);
+        } else {
+            console.log('Browser Switcher Indicator: No default browser found, using fallback icon');
         }
     }
 
@@ -62,6 +65,7 @@ class BrowserIndicator extends PanelMenu.Button {
     updateIcon(browserId) {
         if (!browserId) {
             // Use fallback icon
+            console.log('Browser Switcher: No browser ID, using fallback icon');
             this._setIconFromName('web-browser');
             return;
         }
@@ -71,8 +75,10 @@ class BrowserIndicator extends PanelMenu.Button {
         const browser = browsers.find(b => b.id === browserId);
         
         if (browser && browser.icon) {
+            console.log(`Browser Switcher: Setting icon to ${browser.icon} for ${browser.name}`);
             this._setIconFromName(browser.icon);
         } else {
+            console.log(`Browser Switcher: Browser ${browserId} not found or has no icon, using fallback`);
             // Fallback to generic browser icon
             this._setIconFromName('web-browser');
         }
