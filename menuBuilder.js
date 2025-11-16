@@ -36,7 +36,7 @@ class MenuBuilder {
         this._menuItems.clear();
         
         const browsers = this._browserManager.getInstalledBrowsers();
-        const currentBrowserId = this._browserManager.getCurrentDefaultBrowser();
+        const currentBrowserId = this._browserManager.getCachedDefaultBrowser();
         
         console.log(`Browser Switcher: Building menu with ${browsers.length} browsers`);
         browsers.forEach(b => console.log(`  - ${b.name} (${b.id})`));

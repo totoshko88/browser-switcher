@@ -25,8 +25,8 @@ class BrowserIndicator extends PanelMenu.Button {
         // Set up browser change monitoring
         this._setupBrowserChangeMonitoring();
         
-        // Initialize with current browser icon
-        const currentBrowser = this._browserManager.getCurrentDefaultBrowser();
+        // Initialize with current browser icon (use cached value)
+        const currentBrowser = this._browserManager.getCachedDefaultBrowser();
         if (currentBrowser) {
             this.updateIcon(currentBrowser);
         }
