@@ -71,6 +71,14 @@ Uses `xdg-settings` as the primary method for getting/setting the default browse
 ### Performance
 All subprocess calls are asynchronous to prevent blocking the Gnome Shell UI thread, ensuring smooth performance even during browser detection and switching operations.
 
+## Support the Project
+
+If you find this extension useful, consider supporting its development:
+
+- ☕ **Ko-Fi**: [ko-fi.com/totoshko88](https://ko-fi.com/totoshko88)
+- 💳 **PayPal/Payoneer**: totoshko88@gmail.com
+- 🇺🇦 **UAH (Monobank)**: [send.monobank.ua/jar/2UgaGcQ3JC](https://send.monobank.ua/jar/2UgaGcQ3JC)
+
 ## License
 
 GPL-3.0 - See [LICENSE](LICENSE) for details.

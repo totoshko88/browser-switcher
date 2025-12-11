@@ -9,5 +9,12 @@
     "48",
     "49"
   ],
-  "url": "https://github.com/totoshko88/browser-switcher"
+  "url": "https://github.com/totoshko88/browser-switcher",
+  "donations": {
+    "kofi": "totoshko88",
+    "paypal": "totoshko88@gmail.com",
+    "custom": [
+      "https://send.monobank.ua/jar/2UgaGcQ3JC"
+    ]
+  }
 }
