@@ -1,29 +1,39 @@
 # Gnome Browser Switcher
 
-A lightweight Gnome Shell extension for quick default browser switching through the system panel.
+<p align="center">
+  <img src="screenshots/ico.png" alt="Browser Switcher Icon" width="128">
+</p>
+
+<p align="center">
+  <strong>One-click default browser switching from the Gnome Shell panel</strong>
+</p>
+
+<p align="center">
+  <a href="#installation">Installation</a> •
+  <a href="#features">Features</a> •
+  <a href="#requirements">Requirements</a> •
+  <a href="#development">Development</a> •
+  <a href="#support">Support</a>
+</p>
+
+---
 
 ## Features
 
-- 🚀 **Simple & Fast** - One-click browser switching
-- 🎯 **Zero Configuration** - Works out of the box
-- 🪶 **Lightweight** - No external dependencies
-- 🔄 **Auto-Detection** - Finds all installed browsers automatically
-- 🎨 **Native Integration** - Matches Gnome Shell design
-- ⚡ **Non-Blocking** - Uses async subprocess calls for smooth performance
+| Feature | Description |
+|---------|-------------|
+| 🚀 Simple & Fast | One-click browser switching |
+| 🎯 Zero Configuration | Works out of the box |
+| 🪶 Lightweight | No external dependencies |
+| 🔄 Auto-Detection | Finds all installed browsers automatically |
+| 🎨 Native Integration | Matches Gnome Shell design |
+| ⚡ Non-Blocking | Async operations for smooth performance |
 
 ## Use Case
 
-Perfect for users who work with different browser profiles for different tasks (e.g., separate work and personal SSO authentication).
+Perfect for users who work with different browser profiles for different tasks — for example, separate work and personal SSO authentication.
 
-## Recent Changes
-
-### v1.1 (November 2024)
-- ✅ **Fixed**: Replaced synchronous subprocess calls with async implementation
-- ✅ **Improved**: Cleaner logs - reduced noise from non-browser .desktop files
-- ✅ **Enhanced**: Better error handling and fallback mechanisms
-- ✅ **Compliant**: Now fully compatible with extensions.gnome.org guidelines
-
-<img width="1024" height="768" alt="1" src="https://github.com/user-attachments/assets/a0f0f2e4-cc5d-4160-af2b-e2c967b9f226" />
+<img width="1024" alt="Screenshot" src="https://github.com/user-attachments/assets/a0f0f2e4-cc5d-4160-af2b-e2c967b9f226" />
 
 ## Installation
 
@@ -33,16 +43,17 @@ Coming soon after initial release.
 
 ### Manual Installation
 
-Download the latest release ZIP file from [Releases](https://github.com/totoshko88/browser-switcher/releases) and install:
+1. Download the latest release from [Releases](https://github.com/totoshko88/browser-switcher/releases)
 
+2. Install and enable:
 ```bash
 gnome-extensions install browser-switcher@totoshko88.github.io.shell-extension.zip
 gnome-extensions enable browser-switcher@totoshko88.github.io
 ```
 
-Then restart Gnome Shell:
-- On X11: Press `Alt+F2`, type `r`, and press Enter
-- On Wayland: Log out and log back in
+3. Restart Gnome Shell:
+   - **X11**: Press `Alt+F2`, type `r`, press Enter
+   - **Wayland**: Log out and log back in
 
 ### Uninstallation
 
@@ -53,50 +64,25 @@ gnome-extensions uninstall browser-switcher@totoshko88.github.io
 
 ## Requirements
 
-- Gnome Shell 45+
-- xdg-utils (typically pre-installed on most Linux distributions)
-- At least one web browser installed with a valid .desktop file
+- Gnome Shell 45, 46, 47, 48, or 49
+- `xdg-utils` (pre-installed on most Linux distributions)
+- At least one web browser with a valid `.desktop` file
 
-## Technical Details
+## How It Works
 
-### Browser Detection
-The extension scans standard XDG directories for `.desktop` files with the `WebBrowser` category:
+**Browser Detection**: Scans XDG directories for `.desktop` files with `WebBrowser` category:
 - `/usr/share/applications`
 - `/usr/local/share/applications`
 - `~/.local/share/applications`
 
-### Default Browser Management
-Uses `xdg-settings` as the primary method for getting/setting the default browser. This ensures compatibility across different desktop environments and follows XDG standards.
-
-### Performance
-All subprocess calls are asynchronous to prevent blocking the Gnome Shell UI thread, ensuring smooth performance even during browser detection and switching operations.
-
-## Support the Project
-
-If you find this extension useful, consider supporting its development:
-
-- ☕ **Ko-Fi**: [ko-fi.com/totoshko88](https://ko-fi.com/totoshko88)
-- 💳 **PayPal/Payoneer**: totoshko88@gmail.com
-- 🇺🇦 **UAH (Monobank)**: [send.monobank.ua/jar/2UgaGcQ3JC](https://send.monobank.ua/jar/2UgaGcQ3JC)
-
-## License
-
-GPL-3.0 - See [LICENSE](LICENSE) for details.
-
-## Contributing
-
-Contributions welcome! Please ensure:
-- Code follows existing style
-- Extension remains simple and lightweight
-- No external dependencies added
-- All subprocess calls are asynchronous (no sync spawns)
-- Tested on Gnome Shell 45+
+**Default Browser Management**: Uses `xdg-settings` for cross-desktop compatibility.
 
 ## Development
 
-### Testing Locally
+### Local Testing
+
 ```bash
-# Copy files to extension directory
+# Copy to extension directory
 cp *.js ~/.local/share/gnome-shell/extensions/browser-switcher@totoshko88.github.io/
 
 # Restart extension
@@ -107,10 +93,30 @@ gnome-extensions enable browser-switcher@totoshko88.github.io
 journalctl -f -o cat | grep "Browser Switcher"
 ```
 
-### Building Release Package
+### Building Release
+
 ```bash
 gnome-extensions pack --force --out-dir=. \
   --extra-source=browserManager.js \
   --extra-source=indicator.js \
   --extra-source=menuBuilder.js .
 ```
+
+### Contributing
+
+Contributions welcome! Please ensure:
+- Code follows existing style
+- All subprocess calls are asynchronous
+- Tested on Gnome Shell 45+
+
+## Support
+
+If you find this extension useful, consider supporting development:
+
+[![Ko-Fi](https://img.shields.io/badge/Ko--Fi-Support-ff5e5b?logo=ko-fi)](https://ko-fi.com/totoshko88)
+[![PayPal](https://img.shields.io/badge/PayPal-Donate-00457C?logo=paypal)](https://www.paypal.com/qrcodes/p2pqrc/JJLUXRZSQ5V3A)
+[![Monobank](https://img.shields.io/badge/Monobank-UAH-black)](https://send.monobank.ua/jar/2UgaGcQ3JC)
+
+## License
+
+GPL-3.0 — Made with ❤️ in Ukraine 🇺🇦
