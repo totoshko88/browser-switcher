@@ -70,7 +70,11 @@ gnome-extensions uninstall browser-switcher@totoshko88.github.io
 
 ## How It Works
 
-**Browser Detection**: Scans all XDG data directories (`XDG_DATA_DIRS` + `XDG_DATA_HOME`) for `.desktop` files with `WebBrowser` category. This includes system packages, Flatpak, Snap, and user-installed browsers.
+**Browser Detection**: Scans XDG data directories and Flatpak directories for `.desktop` files with `WebBrowser` category:
+
+- **XDG Data Directories** (`XDG_DATA_DIRS`): System-wide applications including `/usr/share/applications`, `/usr/local/share/applications`, and system-wide Flatpaks
+- **XDG User Directory** (`XDG_DATA_HOME`): User-installed applications at `~/.local/share/applications`
+- **Flatpak User Directory**: User-installed Flatpaks at `~/.local/share/flatpak/exports/share/applications`
 
 **Default Browser Management**: Uses `xdg-settings` for cross-desktop compatibility.
 
