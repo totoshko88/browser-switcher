@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.2] - 2026-03-19
+
+### Added
+- Flatpak user-installed browser detection (`~/.local/share/flatpak/exports/share/applications`)
+- Donatello donation link
+
+### Fixed
+- Duplicate browser detection: check by desktop file ID only (Flatpak browsers share `/usr/bin/flatpak` exec path, causing false duplicates)
+
+### Changed
+- Updated donation links: removed Ko-fi, PayPal, Payoneer; added Donatello
+- README: Wayland-first restart instructions (X11 noted as GNOME 49 and earlier)
+
 ## [1.2.1] - 2026-02-20
 
 ### Fixed

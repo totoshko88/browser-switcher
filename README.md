@@ -52,8 +52,8 @@ gnome-extensions enable browser-switcher@totoshko88.github.io
 ```
 
 3. Restart Gnome Shell:
-   - **X11**: Press `Alt+F2`, type `r`, press Enter
    - **Wayland**: Log out and log back in
+   - **X11** (GNOME 49 and earlier): Press `Alt+F2`, type `r`, press Enter
 
 ### Uninstallation
 
@@ -70,7 +70,11 @@ gnome-extensions uninstall browser-switcher@totoshko88.github.io
 
 ## How It Works
 
-**Browser Detection**: Scans all XDG data directories (`XDG_DATA_DIRS` + `XDG_DATA_HOME`) for `.desktop` files with `WebBrowser` category. This includes system packages, Flatpak, Snap, and user-installed browsers.
+**Browser Detection**: Scans XDG data directories and Flatpak directories for `.desktop` files with `WebBrowser` category:
+
+- **XDG Data Directories** (`XDG_DATA_DIRS`): System-wide applications including `/usr/share/applications`, `/usr/local/share/applications`, and system-wide Flatpaks
+- **XDG User Directory** (`XDG_DATA_HOME`): User-installed applications at `~/.local/share/applications`
+- **Flatpak User Directory**: User-installed Flatpaks at `~/.local/share/flatpak/exports/share/applications`
 
 **Default Browser Management**: Uses `xdg-settings` for cross-desktop compatibility.
 
@@ -110,9 +114,8 @@ Contributions welcome! Please ensure:
 
 If you find this extension useful, consider supporting development:
 
-[![Ko-Fi](https://img.shields.io/badge/Ko--Fi-Support-ff5e5b?logo=ko-fi)](https://ko-fi.com/totoshko88)
-[![PayPal](https://img.shields.io/badge/PayPal-Donate-00457C?logo=paypal)](https://paypal.me/totoshko88)
 [![Monobank](https://img.shields.io/badge/Monobank-UAH-black)](https://send.monobank.ua/jar/2UgaGcQ3JC)
+[![Donatello](https://img.shields.io/badge/Donatello-Support-ff6600)](https://donatello.to/totoshko88)
 
 ## License
 

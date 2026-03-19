@@ -64,6 +64,14 @@ class BrowserManager {
             this._scanDirectory(GLib.build_filenamev([path, 'applications']));
         }
 
+        // Flatpak user-installed applications
+        // Note: This path is not included in standard XDG_DATA_DIRS but contains
+        // .desktop files for user-installed Flatpaks
+        const flatpakUserDir = GLib.build_filenamev([
+            GLib.get_home_dir(), '.local', 'share', 'flatpak', 'exports', 'share', 'applications'
+        ]);
+        this._scanDirectory(flatpakUserDir);
+
         if (this._browsers.length === 0) {
             console.warn('Browser Switcher: No browsers found');
         }
@@ -138,8 +146,11 @@ class BrowserManager {
                 desktopFile: filePath,
             };
 
+            // Check for duplicates by ID only
+            // Note: Flatpak browsers all use /usr/bin/flatpak as exec path,
+            // so checking by execPath would cause false duplicates
             const existingBrowser = this._browsers.find(b =>
-                b.id === browser.id || b.execPath === browser.execPath
+                b.id === browser.id
             );
             if (!existingBrowser)
                 this._browsers.push(browser);
