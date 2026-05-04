@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.3] - 2026-05-05
+
+### Fixed
+- Duplicate Google Chrome in menu when both `google-chrome.desktop` and `google-chrome-stable.desktop` exist (added deduplication by display name)
+- Panel icon now starts as generic `web-browser-symbolic` and updates to the actual default browser once detected (avoids showing a stale colored icon during async initialization)
+- File monitor not detecting external browser changes (race condition in `getCurrentDefaultBrowser` was overwriting cached value before comparison)
+- Race condition: `disable()` during async `initialize()` no longer crashes on null references
+- Filter out `.desktop` files with `NoDisplay=true` or `Hidden=true`
+
+### Changed
+- Added `version` field to `metadata.json` for extensions.gnome.org compatibility
+- `var` → `const` for `BrowserIndicator` export (ES6 module style)
+
 ## [1.2.2] - 2026-03-19
 
 ### Added

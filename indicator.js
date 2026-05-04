@@ -10,7 +10,7 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
  * BrowserIndicator displays the current browser icon in the system panel
  * and provides access to the browser switching menu.
  */
-var BrowserIndicator = GObject.registerClass(
+const BrowserIndicator = GObject.registerClass(
     class BrowserIndicator extends PanelMenu.Button {
         _init(browserManager) {
             super._init(0.0, 'Browser Switcher Indicator');
@@ -18,7 +18,7 @@ var BrowserIndicator = GObject.registerClass(
             this._browserManager = browserManager;
 
             this._icon = new St.Icon({
-                gicon: Gio.icon_new_for_string('web-browser'),
+                icon_name: 'web-browser-symbolic',
                 style_class: 'system-status-icon',
             });
             this.add_child(this._icon);
@@ -27,6 +27,7 @@ var BrowserIndicator = GObject.registerClass(
                 this.updateIcon(browserId);
             });
 
+            // Icon will be updated once browserManager.initialize() resolves
             const currentBrowser = this._browserManager.getCachedDefaultBrowser();
             if (currentBrowser)
                 this.updateIcon(currentBrowser);

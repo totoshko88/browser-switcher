@@ -120,6 +120,17 @@ class BrowserManager {
         try {
             keyFile.load_from_file(filePath, GLib.KeyFileFlags.NONE);
 
+            // Skip hidden or non-displayable entries
+            try {
+                if (keyFile.get_boolean('Desktop Entry', 'NoDisplay'))
+                    return;
+            } catch (_e) { /* field absent — not hidden */ }
+
+            try {
+                if (keyFile.get_boolean('Desktop Entry', 'Hidden'))
+                    return;
+            } catch (_e) { /* field absent — not hidden */ }
+
             try {
                 const categories = keyFile.get_string('Desktop Entry', 'Categories');
                 if (!categories || !categories.includes('WebBrowser'))
@@ -146,11 +157,13 @@ class BrowserManager {
                 desktopFile: filePath,
             };
 
-            // Check for duplicates by ID only
+            // Check for duplicates by ID or display name
             // Note: Flatpak browsers all use /usr/bin/flatpak as exec path,
-            // so checking by execPath would cause false duplicates
+            // so checking by execPath would cause false duplicates.
+            // Checking by name catches cases like google-chrome.desktop
+            // and google-chrome-stable.desktop which are the same browser.
             const existingBrowser = this._browsers.find(b =>
-                b.id === browser.id
+                b.id === browser.id || b.name === browser.name
             );
             if (!existingBrowser)
                 this._browsers.push(browser);
@@ -174,10 +187,8 @@ class BrowserManager {
 
             if (stdout) {
                 const browserId = stdout.trim();
-                if (browserId) {
-                    this._currentDefault = browserId;
+                if (browserId)
                     return browserId;
-                }
             }
         } catch (e) {
             console.warn(`Browser Switcher: xdg-settings failed: ${e.message}`);
@@ -270,8 +281,9 @@ class BrowserManager {
         this._debounceTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 250, () => {
             this._debounceTimeoutId = null;
 
+            const previousDefault = this._currentDefault;
             this.getCurrentDefaultBrowser().then(newDefault => {
-                if (newDefault && newDefault !== this._currentDefault) {
+                if (newDefault && newDefault !== previousDefault) {
                     this._currentDefault = newDefault;
                     this._notifyChange(newDefault);
                 }
