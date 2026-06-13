@@ -18,9 +18,7 @@ class BrowserManager {
         this._currentDefault = null;
         this._changeCallbacks = [];
         this._appInfoMonitor = null;
-        this._appInfoMonitorSignalId = null;
         this._fileMonitor = null;
-        this._fileMonitorSignalId = null;
         this._debounceTimeoutId = null;
     }
 
@@ -148,10 +146,14 @@ class BrowserManager {
      * @private
      */
     _setupMonitors() {
+        // connectObject() tracks the connection against this manager so the
+        // matching disconnectObject(this) in destroy() cleans everything up.
         this._appInfoMonitor = Gio.AppInfoMonitor.get();
-        this._appInfoMonitorSignalId = this._appInfoMonitor.connect('changed', () => {
-            this._onBrowserConfigChanged();
-        });
+        this._appInfoMonitor.connectObject(
+            'changed',
+            () => this._onBrowserConfigChanged(),
+            this
+        );
 
         const configPath = GLib.build_filenamev([
             GLib.get_user_config_dir(),
@@ -161,9 +163,11 @@ class BrowserManager {
 
         try {
             this._fileMonitor = file.monitor_file(Gio.FileMonitorFlags.NONE, null);
-            this._fileMonitorSignalId = this._fileMonitor.connect('changed', () => {
-                this._onBrowserConfigChanged();
-            });
+            this._fileMonitor.connectObject(
+                'changed',
+                () => this._onBrowserConfigChanged(),
+                this
+            );
         } catch (e) {
             console.error(`Browser Switcher: Could not set up file monitor: ${e.message}`);
         }
@@ -217,18 +221,12 @@ class BrowserManager {
         }
 
         if (this._appInfoMonitor) {
-            if (this._appInfoMonitorSignalId) {
-                this._appInfoMonitor.disconnect(this._appInfoMonitorSignalId);
-                this._appInfoMonitorSignalId = null;
-            }
+            this._appInfoMonitor.disconnectObject(this);
             this._appInfoMonitor = null;
         }
 
         if (this._fileMonitor) {
-            if (this._fileMonitorSignalId) {
-                this._fileMonitor.disconnect(this._fileMonitorSignalId);
-                this._fileMonitorSignalId = null;
-            }
+            this._fileMonitor.disconnectObject(this);
             this._fileMonitor.cancel();
             this._fileMonitor = null;
         }

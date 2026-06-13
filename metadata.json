@@ -1,7 +1,7 @@
 {
   "uuid": "browser-switcher@totoshko88.github.io",
   "name": "Browser Switcher",
-  "version": 16,
+  "version": 17,
   "description": "Quick default browser switching from the system panel. Perfect for users working with different browser profiles.",
   "shell-version": [
     "45",

@@ -12,7 +12,6 @@ class MenuBuilder {
         this._indicator = indicator;
         this._browserManager = browserManager;
         this._menuItems = new Map();
-        this._menuOpenStateId = null;
 
         this.buildMenu();
 
@@ -23,14 +22,16 @@ class MenuBuilder {
         // Re-detect browsers when the menu opens so newly installed or
         // removed browsers appear without restarting the Shell. Detection
         // is cheap (Gio.AppInfo reads the cached application database).
-        this._menuOpenStateId = this._indicator.menu.connect(
+        // connectObject() tracks the handler against this builder for cleanup.
+        this._indicator.menu.connectObject(
             'open-state-changed',
             (_menu, open) => {
                 if (open) {
                     this._browserManager.refresh();
                     this.buildMenu();
                 }
-            }
+            },
+            this
         );
     }
 
@@ -38,6 +39,11 @@ class MenuBuilder {
      * Builds the popup menu with all available browsers
      */
     buildMenu() {
+        // Disconnect activate handlers tracked against this builder before
+        // the items are destroyed by removeAll().
+        for (const item of this._menuItems.values())
+            item.disconnectObject(this);
+
         this._indicator.menu.removeAll();
         this._menuItems.clear();
 
@@ -76,9 +82,9 @@ class MenuBuilder {
         else
             item.setOrnament(PopupMenu.Ornament.NONE);
 
-        item.connect('activate', () => {
+        item.connectObject('activate', () => {
             this._onBrowserSelected(browser.id);
-        });
+        }, this);
 
         this._indicator.menu.addMenuItem(item);
         this._menuItems.set(browser.id, item);
@@ -125,10 +131,12 @@ class MenuBuilder {
      * Cleans up resources
      */
     destroy() {
-        if (this._menuOpenStateId && this._indicator?.menu) {
-            this._indicator.menu.disconnect(this._menuOpenStateId);
-            this._menuOpenStateId = null;
-        }
+        for (const item of this._menuItems.values())
+            item.disconnectObject(this);
+
+        if (this._indicator?.menu)
+            this._indicator.menu.disconnectObject(this);
+
         this._menuItems.clear();
         this._indicator = null;
         this._browserManager = null;

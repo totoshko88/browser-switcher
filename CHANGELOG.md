@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.5] - 2026-06-13
+
+### Changed
+- Use `connectObject()` / `disconnectObject()` for all GObject signal
+  connections (AppInfo/file monitors and the menu) so handlers are tracked
+  against their owner and cleaned up reliably (extensions.gnome.org review)
+
 ## [1.2.4] - 2026-06-13
 
 ### Fixed
