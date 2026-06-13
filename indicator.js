@@ -3,7 +3,6 @@
 
 import GObject from 'gi://GObject';
 import St from 'gi://St';
-import Gio from 'gi://Gio';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 
 /**
@@ -38,31 +37,15 @@ const BrowserIndicator = GObject.registerClass(
          * @param {string} browserId - Browser ID (desktop file name)
          */
         updateIcon(browserId) {
-            if (!browserId) {
-                this._setIconFromName('web-browser');
-                return;
-            }
+            const browser = browserId
+                ? this._browserManager.getInstalledBrowsers().find(b => b.id === browserId)
+                : null;
 
-            const browsers = this._browserManager.getInstalledBrowsers();
-            const browser = browsers.find(b => b.id === browserId);
-
-            this._setIconFromName(browser?.icon ?? 'web-browser');
-        }
-
-        /**
-         * Sets the icon from an icon name or path
-         * @param {string} iconName - Icon name or path
-         * @private
-         */
-        _setIconFromName(iconName) {
-            try {
-                this._icon.gicon = Gio.icon_new_for_string(iconName);
-            } catch (_e) {
-                try {
-                    this._icon.gicon = Gio.icon_new_for_string('web-browser');
-                } catch (_fallbackError) {
-                    // Nothing we can do
-                }
+            if (browser?.gicon) {
+                this._icon.gicon = browser.gicon;
+            } else {
+                this._icon.gicon = null;
+                this._icon.icon_name = 'web-browser-symbolic';
             }
         }
 

@@ -12,12 +12,26 @@ class MenuBuilder {
         this._indicator = indicator;
         this._browserManager = browserManager;
         this._menuItems = new Map();
+        this._menuOpenStateId = null;
 
         this.buildMenu();
 
         this._browserManager.watchDefaultBrowser((browserId) => {
             this.updateCurrentBrowser(browserId);
         });
+
+        // Re-detect browsers when the menu opens so newly installed or
+        // removed browsers appear without restarting the Shell. Detection
+        // is cheap (Gio.AppInfo reads the cached application database).
+        this._menuOpenStateId = this._indicator.menu.connect(
+            'open-state-changed',
+            (_menu, open) => {
+                if (open) {
+                    this._browserManager.refresh();
+                    this.buildMenu();
+                }
+            }
+        );
     }
 
     /**
@@ -53,7 +67,7 @@ class MenuBuilder {
     _addBrowserMenuItem(browser, currentBrowserId) {
         const item = new PopupMenu.PopupImageMenuItem(
             browser.name,
-            browser.icon || 'web-browser'
+            browser.gicon ?? 'web-browser'
         );
 
         // Use built-in ornament API for checkmarks (GNOME HIG compliant)
@@ -75,8 +89,8 @@ class MenuBuilder {
      * @param {string} browserId - Selected browser ID
      * @private
      */
-    async _onBrowserSelected(browserId) {
-        const success = await this._browserManager.setDefaultBrowser(browserId);
+    _onBrowserSelected(browserId) {
+        const success = this._browserManager.setDefaultBrowser(browserId);
 
         if (!success) {
             try {
@@ -111,6 +125,10 @@ class MenuBuilder {
      * Cleans up resources
      */
     destroy() {
+        if (this._menuOpenStateId && this._indicator?.menu) {
+            this._indicator.menu.disconnect(this._menuOpenStateId);
+            this._menuOpenStateId = null;
+        }
         this._menuItems.clear();
         this._indicator = null;
         this._browserManager = null;

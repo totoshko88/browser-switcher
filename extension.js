@@ -25,8 +25,12 @@ export default class BrowserSwitcherExtension extends Extension {
      * Called when the extension is enabled
      */
     enable() {
-        // Instantiate browser manager
+        // Instantiate and initialize the browser manager first.
+        // initialize() is synchronous (Gio.AppInfo reads the cached app
+        // database), so browsers and the current default are ready before
+        // the UI components query them.
         this._browserManager = new BrowserManager();
+        const currentBrowser = this._browserManager.initialize();
 
         // Create indicator with browser manager reference
         this._indicator = new BrowserIndicator(this._browserManager);
@@ -34,26 +38,13 @@ export default class BrowserSwitcherExtension extends Extension {
         // Add indicator to system panel
         Main.panel.addToStatusArea('browser-switcher-indicator', this._indicator);
 
-        // Connect indicator to menu builder
+        // Connect indicator to menu builder (builds the menu from detected browsers)
         this._menuBuilder = new MenuBuilder(this._indicator, this._browserManager);
 
-        // Show the indicator
+        // Show the indicator with the correct icon
         this._indicator.show();
-
-        // Initialize browser manager asynchronously (non-blocking)
-        // This fetches the default browser and sets up file monitoring
-        this._browserManager.initialize().then(currentBrowser => {
-            // Guard against disable() being called while initialize() was in-flight
-            if (!this._indicator || !this._menuBuilder)
-                return;
-
-            if (currentBrowser)
-                this._indicator.updateIcon(currentBrowser);
-            // Rebuild menu now that browsers are detected
-            this._menuBuilder.buildMenu();
-        }).catch(e => {
-            console.error(`Browser Switcher: Initialization error: ${e.message}`);
-        });
+        if (currentBrowser)
+            this._indicator.updateIcon(currentBrowser);
     }
 
     /**

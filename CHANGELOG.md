@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.4] - 2026-06-13
+
+### Fixed
+- `enable()` crashed with a `TypeError`: `initialize()` became synchronous (returns `string|null`) but `extension.js` still called `.then()` on the result — the extension failed to start
+- Browser icons never displayed in the panel or menu: components read the removed `browser.icon` field instead of the new `browser.gicon` (`Gio.Icon`) provided by the `Gio.AppInfo` detection
+
+### Changed
+- Migrated browser detection and default-browser management from manual `.desktop` parsing and `xdg-settings` subprocesses to `Gio.AppInfo` (`get_all_for_type` / `set_as_default_for_type`) and `Gio.AppInfoMonitor` — fewer external dependencies and less code
+- Menu now rebuilds on open (`open-state-changed`), so installed/removed browsers appear without restarting the Shell
+
+### Removed
+- Dead fallback `try/catch` in `indicator._setIconFromName` and the now-unused `Gio` import in `indicator.js`
+- Unnecessary `async`/`await` around the now-synchronous `setDefaultBrowser()`
+
 ## [1.2.3] - 2026-05-05
 
 ### Fixed
