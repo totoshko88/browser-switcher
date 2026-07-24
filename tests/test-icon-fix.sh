@@ -27,8 +27,13 @@ cp extension.js "$EXTENSION_DIR/"
 cp browserManager.js "$EXTENSION_DIR/"
 cp indicator.js "$EXTENSION_DIR/"
 cp menuBuilder.js "$EXTENSION_DIR/"
+cp prefs.js "$EXTENSION_DIR/"
 cp metadata.json "$EXTENSION_DIR/"
 cp stylesheet.css "$EXTENSION_DIR/"
+glib-compile-schemas schemas
+mkdir -p "$EXTENSION_DIR/schemas"
+cp schemas/org.gnome.shell.extensions.browser-switcher.gschema.xml "$EXTENSION_DIR/schemas/"
+cp schemas/gschemas.compiled "$EXTENSION_DIR/schemas/"
 echo "✓ Files copied successfully"
 echo ""
 

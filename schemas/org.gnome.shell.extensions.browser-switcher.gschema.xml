@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.browser-switcher"
+          path="/org/gnome/shell/extensions/browser-switcher/">
+    <key name="desaturate-panel-icon" type="b">
+      <default>false</default>
+      <summary>Desaturate the panel browser icon</summary>
+      <description>Whether to render the browser icon in the system panel without color.</description>
+    </key>
+  </schema>
+</schemalist>
+

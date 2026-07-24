@@ -78,6 +78,13 @@ gnome-extensions uninstall browser-switcher@totoshko88.github.io
 
 **Default Browser Management**: Uses `xdg-settings` for cross-desktop compatibility.
 
+### Panel Icon Appearance
+
+Open Browser Switcher's **Preferences** from Extension Manager and use
+**Desaturate panel icon** to choose whether only the system-panel icon is shown
+in grayscale. The choice is saved and takes effect immediately; browser icons
+in the menu retain their color.
+
 ## Development
 
 ### Local Testing
@@ -85,6 +92,8 @@ gnome-extensions uninstall browser-switcher@totoshko88.github.io
 ```bash
 # Copy to extension directory
 cp *.js ~/.local/share/gnome-shell/extensions/browser-switcher@totoshko88.github.io/
+glib-compile-schemas schemas
+cp -r schemas ~/.local/share/gnome-shell/extensions/browser-switcher@totoshko88.github.io/
 
 # Restart extension
 gnome-extensions disable browser-switcher@totoshko88.github.io
@@ -100,7 +109,9 @@ journalctl -f -o cat | grep "Browser Switcher"
 gnome-extensions pack --force --out-dir=. \
   --extra-source=browserManager.js \
   --extra-source=indicator.js \
-  --extra-source=menuBuilder.js .
+  --extra-source=menuBuilder.js \
+  --extra-source=prefs.js \
+  --schema=schemas/org.gnome.shell.extensions.browser-switcher.gschema.xml .
 ```
 
 ### Contributing
@@ -120,3 +131,4 @@ If you find this extension useful, consider supporting development:
 ## License
 
 GPL-3.0 — Made with ❤️ in Ukraine 🇺🇦
+

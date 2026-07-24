@@ -56,11 +56,10 @@ class MenuBuilder {
                 can_focus: false,
             });
             this._indicator.menu.addMenuItem(item);
-            return;
-        }
-
-        for (const browser of browsers) {
-            this._addBrowserMenuItem(browser, currentBrowserId);
+        } else {
+            for (const browser of browsers) {
+                this._addBrowserMenuItem(browser, currentBrowserId);
+            }
         }
     }
 

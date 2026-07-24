@@ -1,7 +1,8 @@
 {
   "uuid": "browser-switcher@totoshko88.github.io",
   "name": "Browser Switcher",
-  "version": 17,
+  "version": 18,
+  "settings-schema": "org.gnome.shell.extensions.browser-switcher",
   "description": "Quick default browser switching from the system panel. Perfect for users working with different browser profiles.",
   "shell-version": [
     "45",

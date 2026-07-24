@@ -44,13 +44,16 @@ jobs:
       - name: Build extension package
         run: |
           # Create zip manually (gnome-extensions pack may not be available on CI)
+          glib-compile-schemas schemas
           zip -r browser-switcher@totoshko88.github.io.shell-extension.zip \
             extension.js \
             browserManager.js \
             indicator.js \
             menuBuilder.js \
+            prefs.js \
             metadata.json \
-            stylesheet.css
+            stylesheet.css \
+            schemas
 
       - name: Create Release
         uses: softprops/action-gh-release@v1

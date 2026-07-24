@@ -18,6 +18,7 @@ export default class BrowserSwitcherExtension extends Extension {
         this._browserManager = null;
         this._indicator = null;
         this._menuBuilder = null;
+        this._settings = null;
     }
 
     /**
@@ -25,6 +26,8 @@ export default class BrowserSwitcherExtension extends Extension {
      * Called when the extension is enabled
      */
     enable() {
+        this._settings = this.getSettings();
+
         // Instantiate and initialize the browser manager first.
         // initialize() is synchronous (Gio.AppInfo reads the cached app
         // database), so browsers and the current default are ready before
@@ -33,13 +36,16 @@ export default class BrowserSwitcherExtension extends Extension {
         const currentBrowser = this._browserManager.initialize();
 
         // Create indicator with browser manager reference
-        this._indicator = new BrowserIndicator(this._browserManager);
+        this._indicator = new BrowserIndicator(this._browserManager, this._settings);
 
         // Add indicator to system panel
         Main.panel.addToStatusArea('browser-switcher-indicator', this._indicator);
 
         // Connect indicator to menu builder (builds the menu from detected browsers)
-        this._menuBuilder = new MenuBuilder(this._indicator, this._browserManager);
+        this._menuBuilder = new MenuBuilder(
+            this._indicator,
+            this._browserManager
+        );
 
         // Show the indicator with the correct icon
         this._indicator.show();
@@ -69,5 +75,7 @@ export default class BrowserSwitcherExtension extends Extension {
             this._browserManager.destroy();
             this._browserManager = null;
         }
+
+        this._settings = null;
     }
 }
