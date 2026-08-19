@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.6] - 2026-07-24
+
+### Added
+- Persistent panel icon desaturation preference, available from the extension
+  Preferences dialog in Extension Manager.
+
 ## [1.2.5] - 2026-06-13
 
 ### Changed
