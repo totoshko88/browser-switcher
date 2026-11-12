@@ -2,11 +2,47 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.2.6] - 2026-07-24
+## [1.2.7] - 2026-11-12
+
+Includes the unreleased 1.2.6 changes.
 
 ### Added
-- Persistent panel icon desaturation preference, available from the extension
-  Preferences dialog in Extension Manager.
+- GNOME Shell 51 support
+- Panel icon desaturation preference in the extension Preferences dialog
+  (thanks @sunshinedaniel)
+
+### Fixed
+- No checkmark and a generic panel icon when the default browser is a hidden
+  handler, e.g. the `userapp-Firefox-*.desktop` file Firefox creates when it
+  makes itself the default. The real default is now listed and marked
+- When duplicate `.desktop` files of one browser exist, the one that is the
+  current default is kept, so it gets the checkmark and icon
+- Switching browsers now also sets `application/xhtml+xml`, and assigns the
+  secondary types (`https`, `text/html`, `application/xhtml+xml`) only when the
+  browser declares them, matching GNOME Settings
+- Applications that handle `http` links but are not web browsers (declared
+  categories without `WebBrowser`) are no longer listed
+- Keyboard focus is no longer lost when opening the menu: it is rebuilt only
+  when the list of browsers changes instead of on every open
+- Browsers are listed alphabetically; previously the current default moved to
+  the top after every switch
+
+### Changed
+- `BrowserManager` is a GObject with `browsers-changed` and `default-changed`
+  signals; the indicator and menu connect with `connectObject()` and clean up
+  their own handlers
+- Code cleanup for the extensions.gnome.org review guidelines: removed
+  redundant checks, `try/catch` and comments, `constructor()` instead of
+  `_init()`, no overrides of `show()`/`hide()`
+- `metadata.json`: `version-name` instead of the `version` field, which
+  extensions.gnome.org manages
+- ESLint flat config (`eslint.config.js`) for ESLint 9/10, lint workflow for
+  pushes and pull requests
+- Release workflow no longer ships `gschemas.compiled`; actions updated
+- Replaced outdated test scripts with `tests/run-tests.sh` (BrowserManager
+  checks and a headless GNOME Shell smoke test)
+- README describes the current `Gio.AppInfo` implementation; `xdg-utils` is no
+  longer listed as a requirement
 
 ## [1.2.5] - 2026-06-13
 

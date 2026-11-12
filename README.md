@@ -24,10 +24,10 @@
 |---------|-------------|
 | 🚀 Simple & Fast | One-click browser switching |
 | 🎯 Zero Configuration | Works out of the box |
-| 🪶 Lightweight | No external dependencies |
-| 🔄 Auto-Detection | Finds all installed browsers automatically |
-| 🎨 Native Integration | Matches Gnome Shell design |
-| ⚡ Non-Blocking | Async operations for smooth performance |
+| 🪶 Lightweight | No external tools or dependencies |
+| 🔄 Auto-Detection | Finds installed browsers, including Flatpak, and picks up installs and removals |
+| 🎨 Native Integration | Matches Gnome Shell design, sets the same defaults as GNOME Settings |
+| 👁️ Always Accurate | Follows default browser changes made in GNOME Settings or by the browser itself |
 
 ## Use Case
 
@@ -64,19 +64,28 @@ gnome-extensions uninstall browser-switcher@totoshko88.github.io
 
 ## Requirements
 
-- Gnome Shell 45–50
-- `xdg-utils` (pre-installed on most Linux distributions)
+- Gnome Shell 45–51
 - At least one web browser with a valid `.desktop` file
 
 ## How It Works
 
-**Browser Detection**: Scans XDG data directories and Flatpak directories for `.desktop` files with `WebBrowser` category:
+**Browser Detection**: Lists the applications registered as `x-scheme-handler/http`
+handlers through `Gio.AppInfo`, which covers system, user and Flatpak installs.
+Applications whose `.desktop` file declares categories without `WebBrowser` are
+skipped. Duplicate entries of the same browser (e.g. `google-chrome.desktop` and
+`google-chrome-stable.desktop`) are shown once.
 
-- **XDG Data Directories** (`XDG_DATA_DIRS`): System-wide applications including `/usr/share/applications`, `/usr/local/share/applications`, and system-wide Flatpaks
-- **XDG User Directory** (`XDG_DATA_HOME`): User-installed applications at `~/.local/share/applications`
-- **Flatpak User Directory**: User-installed Flatpaks at `~/.local/share/flatpak/exports/share/applications`
+**Default Browser**: Selecting a browser makes it the handler for
+`x-scheme-handler/http`, plus `x-scheme-handler/https`, `text/html` and
+`application/xhtml+xml` when the browser declares them. This is the same set
+GNOME Settings changes under *Apps → Default Apps → Web*.
 
-**Default Browser Management**: Uses `xdg-settings` for cross-desktop compatibility.
+If the current default is a hidden handler, such as the `userapp-Firefox-*.desktop`
+file Firefox creates when it makes itself the default, it is listed too, so the
+menu and the panel icon always show the real default.
+
+**Change Tracking**: The menu and panel icon update when browsers are installed
+or removed and when the default changes outside the extension.
 
 ### Panel Icon Appearance
 
@@ -90,14 +99,20 @@ in the menu retain their color.
 ### Local Testing
 
 ```bash
-# Copy to extension directory
-cp *.js ~/.local/share/gnome-shell/extensions/browser-switcher@totoshko88.github.io/
-glib-compile-schemas schemas
-cp -r schemas ~/.local/share/gnome-shell/extensions/browser-switcher@totoshko88.github.io/
+# Automated checks: BrowserManager against the installed browsers (on a copy of
+# mimeapps.list) and a headless GNOME Shell smoke test (GNOME Shell 50+)
+tests/run-tests.sh
 
-# Restart extension
-gnome-extensions disable browser-switcher@totoshko88.github.io
-gnome-extensions enable browser-switcher@totoshko88.github.io
+# Lint (ESLint 9+ flat config)
+npx eslint@10 .
+
+# Try the extension in a nested Shell window (GNOME Shell 49+);
+# on Wayland, disable/enable does not reload changed code in the running Shell
+gnome-extensions pack --force --extra-source=browserManager.js \
+  --extra-source=indicator.js --extra-source=menuBuilder.js \
+  --schema=schemas/org.gnome.shell.extensions.browser-switcher.gschema.xml .
+gnome-extensions install --force browser-switcher@totoshko88.github.io.shell-extension.zip
+dbus-run-session gnome-shell --devkit
 
 # View logs
 journalctl -f -o cat | grep "Browser Switcher"
@@ -110,16 +125,15 @@ gnome-extensions pack --force --out-dir=. \
   --extra-source=browserManager.js \
   --extra-source=indicator.js \
   --extra-source=menuBuilder.js \
-  --extra-source=prefs.js \
   --schema=schemas/org.gnome.shell.extensions.browser-switcher.gschema.xml .
 ```
 
 ### Contributing
 
 Contributions welcome! Please ensure:
-- Code follows existing style
-- All subprocess calls are asynchronous
-- Tested on Gnome Shell 45+
+- Code follows existing style and `npx eslint@10 .` passes
+- `tests/run-tests.sh` passes
+- Changes follow the [extensions.gnome.org review guidelines](https://gjs.guide/extensions/review-guidelines/review-guidelines.html)
 
 ## Support
 

@@ -2,7 +2,6 @@
 .*
 !.gitignore
 !.github
-!.eslintrc.json
 
 # ZIP packages
 *.zip

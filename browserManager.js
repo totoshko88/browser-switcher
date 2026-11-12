@@ -1,107 +1,144 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Browser detection and management for Gnome Browser Switcher
+// Browser detection and default browser management for Gnome Browser Switcher
 
+import GObject from 'gi://GObject';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
+const WEB_CONTENT_TYPE = 'x-scheme-handler/http';
+
+// GNOME Settings assigns these together with the web handler, but only the
+// ones the chosen application declares in its MimeType key.
+const SECONDARY_CONTENT_TYPES = [
+    'x-scheme-handler/https',
+    'text/html',
+    'application/xhtml+xml',
+];
+
+const CHANGE_DEBOUNCE_MS = 250;
+
 /**
- * BrowserManager handles browser detection, default browser management,
- * and monitoring of browser changes.
+ * Applications without a Categories key are kept, so hand-written
+ * .desktop files (e.g. a browser profile launcher) still show up.
  *
- * Uses Gio.AppInfo instead of manual .desktop parsing and xdg-settings
- * subprocesses: get_all_for_type() handles NoDisplay/Hidden/Flatpak exports,
- * and set_as_default_for_type() works without external tools.
+ * @param {Gio.DesktopAppInfo} appInfo
+ * @returns {boolean}
  */
-class BrowserManager {
+function isWebBrowser(appInfo) {
+    const categories = appInfo.get_categories();
+    return !categories || categories.split(';').includes('WebBrowser');
+}
+
+function toBrowser(appInfo) {
+    return {
+        id: appInfo.get_id(),
+        name: appInfo.get_display_name(),
+        gicon: appInfo.get_icon(),
+        appInfo,
+    };
+}
+
+/**
+ * Detects installed browsers through Gio.AppInfo and changes the default
+ * web handler. Emits `browsers-changed` when the list of browsers changes
+ * and `default-changed` when the default browser changes.
+ */
+export const BrowserManager = GObject.registerClass({
+    Signals: {
+        'browsers-changed': {},
+        'default-changed': {},
+    },
+}, class BrowserManager extends GObject.Object {
     constructor() {
+        super();
+
         this._browsers = [];
-        this._currentDefault = null;
-        this._changeCallbacks = [];
+        this._defaultBrowserId = null;
+        this._debounceSourceId = 0;
         this._appInfoMonitor = null;
-        this._fileMonitor = null;
-        this._debounceTimeoutId = null;
+        this._mimeappsMonitor = null;
     }
 
     /**
-     * Initializes the manager by detecting browsers and fetching the
-     * current default browser. Synchronous: Gio.AppInfo reads from the
-     * cached application database, so this is cheap.
-     * @returns {string|null} The initial default browser ID
+     * Detects browsers and starts watching the application database and
+     * the user's mimeapps.list for changes made outside the extension.
      */
-    initialize() {
-        this.refresh();
-        this._setupMonitors();
-        return this._currentDefault;
+    start() {
+        this._detect();
+
+        this._appInfoMonitor = Gio.AppInfoMonitor.get();
+        this._appInfoMonitor.connectObject(
+            'changed', () => this._scheduleRefresh(), this);
+
+        const mimeappsFile = Gio.File.new_for_path(GLib.build_filenamev([
+            GLib.get_user_config_dir(),
+            'mimeapps.list',
+        ]));
+        try {
+            this._mimeappsMonitor = mimeappsFile.monitor_file(Gio.FileMonitorFlags.NONE, null);
+            this._mimeappsMonitor.connectObject(
+                'changed', () => this._scheduleRefresh(), this);
+        } catch (e) {
+            console.error(`Browser Switcher: Could not monitor mimeapps.list: ${e.message}`);
+        }
     }
 
-    /**
-     * Re-detects installed browsers and the current default.
-     */
-    refresh() {
-        this._detectBrowsers();
-        this._currentDefault = this.getCurrentDefaultBrowser();
+    destroy() {
+        if (this._debounceSourceId) {
+            GLib.Source.remove(this._debounceSourceId);
+            this._debounceSourceId = 0;
+        }
+
+        this._appInfoMonitor?.disconnectObject(this);
+        this._appInfoMonitor = null;
+
+        if (this._mimeappsMonitor) {
+            this._mimeappsMonitor.disconnectObject(this);
+            this._mimeappsMonitor.cancel();
+            this._mimeappsMonitor = null;
+        }
+
+        this._browsers = [];
+        this._defaultBrowserId = null;
     }
 
-    /**
-     * Returns the list of detected browsers
-     * @returns {Array} Array of browser objects
-     */
-    getInstalledBrowsers() {
+    /** @returns {Array<{id: string, name: string, gicon: ?Gio.Icon, appInfo: Gio.AppInfo}>} */
+    get browsers() {
         return this._browsers;
     }
 
-    /**
-     * Detects all installed browsers via the http URL handler registry.
-     * @private
-     */
-    _detectBrowsers() {
-        this._browsers = [];
+    /** @returns {?string} desktop file ID of the default browser */
+    get defaultBrowserId() {
+        return this._defaultBrowserId;
+    }
 
-        for (const appInfo of Gio.AppInfo.get_all_for_type('x-scheme-handler/http')) {
-            if (!appInfo.should_show())
-                continue;
-
-            const browser = {
-                id: appInfo.get_id(),
-                name: appInfo.get_display_name(),
-                gicon: appInfo.get_icon(),
-                appInfo,
-            };
-
-            // Deduplicate by ID or display name (e.g. google-chrome.desktop
-            // vs google-chrome-stable.desktop are the same browser)
-            const existingBrowser = this._browsers.find(b =>
-                b.id === browser.id || b.name === browser.name
-            );
-            if (!existingBrowser)
-                this._browsers.push(browser);
-        }
-
-        if (this._browsers.length === 0)
-            console.warn('Browser Switcher: No browsers found');
+    /** @returns {?object} entry of `browsers` for the default browser */
+    get defaultBrowser() {
+        return this._browsers.find(b => b.id === this._defaultBrowserId) ?? null;
     }
 
     /**
-     * Gets the current default browser ID.
-     * @returns {string|null} The desktop file ID or null
+     * Re-reads the application database and emits signals for whatever
+     * changed. Querying the database also re-arms Gio.AppInfoMonitor,
+     * which emits `changed` only once until the next query.
      */
-    getCurrentDefaultBrowser() {
-        const appInfo = Gio.AppInfo.get_default_for_type('x-scheme-handler/http', false);
-        return appInfo ? appInfo.get_id() : null;
+    _refresh() {
+        const previousIds = this._browsers.map(b => b.id).join(';');
+        const previousDefaultId = this._defaultBrowserId;
+
+        this._detect();
+
+        if (this._browsers.map(b => b.id).join(';') !== previousIds)
+            this.emit('browsers-changed');
+        if (this._defaultBrowserId !== previousDefaultId)
+            this.emit('default-changed');
     }
 
     /**
-     * Returns the cached current default browser.
-     * @returns {string|null}
-     */
-    getCachedDefaultBrowser() {
-        return this._currentDefault;
-    }
-
-    /**
-     * Sets the default browser for web content types.
-     * @param {string} browserId - Browser ID (desktop file name)
-     * @returns {boolean} true on success, false on failure
+     * Makes the browser the default handler for web links and pages.
+     *
+     * @param {string} browserId - desktop file ID
+     * @returns {boolean} whether the default was changed
      */
     setDefaultBrowser(browserId) {
         const browser = this._browsers.find(b => b.id === browserId);
@@ -110,131 +147,72 @@ class BrowserManager {
             return false;
         }
 
+        const supportedTypes = browser.appInfo.get_supported_types();
         try {
-            for (const contentType of [
-                'x-scheme-handler/http',
-                'x-scheme-handler/https',
-                'text/html',
-            ])
-                browser.appInfo.set_as_default_for_type(contentType);
+            browser.appInfo.set_as_default_for_type(WEB_CONTENT_TYPE);
+            for (const contentType of SECONDARY_CONTENT_TYPES) {
+                if (supportedTypes.includes(contentType))
+                    browser.appInfo.set_as_default_for_type(contentType);
+            }
         } catch (e) {
             console.error(`Browser Switcher: Failed to set default browser: ${e.message}`);
             return false;
         }
 
-        if (this._currentDefault !== browserId) {
-            this._currentDefault = browserId;
-            this._notifyChange(browserId);
+        // The mimeapps.list monitor fires shortly after and refreshes the
+        // list, which also drops a previously shown hidden default.
+        if (this._defaultBrowserId !== browserId) {
+            this._defaultBrowserId = browserId;
+            this.emit('default-changed');
         }
-
         return true;
     }
 
-    /**
-     * Watches for changes to the default browser
-     * @param {Function} callback - Callback function to call when browser changes
-     */
-    watchDefaultBrowser(callback) {
-        if (callback && typeof callback === 'function')
-            this._changeCallbacks.push(callback);
-    }
-
-    /**
-     * Sets up monitoring for browser changes: the application database
-     * (installs/removals) and the user mimeapps.list (default handler
-     * changes made externally, e.g. via GNOME Settings or xdg-settings).
-     * @private
-     */
-    _setupMonitors() {
-        // connectObject() tracks the connection against this manager so the
-        // matching disconnectObject(this) in destroy() cleans everything up.
-        this._appInfoMonitor = Gio.AppInfoMonitor.get();
-        this._appInfoMonitor.connectObject(
-            'changed',
-            () => this._onBrowserConfigChanged(),
-            this
-        );
-
-        const configPath = GLib.build_filenamev([
-            GLib.get_user_config_dir(),
-            'mimeapps.list',
-        ]);
-        const file = Gio.File.new_for_path(configPath);
-
-        try {
-            this._fileMonitor = file.monitor_file(Gio.FileMonitorFlags.NONE, null);
-            this._fileMonitor.connectObject(
-                'changed',
-                () => this._onBrowserConfigChanged(),
-                this
-            );
-        } catch (e) {
-            console.error(`Browser Switcher: Could not set up file monitor: ${e.message}`);
-        }
-    }
-
-    /**
-     * Handles browser configuration changes with debounce
-     * @private
-     */
-    _onBrowserConfigChanged() {
-        // Debounce: monitors can fire multiple events for a single change
-        if (this._debounceTimeoutId) {
-            GLib.source_remove(this._debounceTimeoutId);
-            this._debounceTimeoutId = null;
-        }
-
-        this._debounceTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 250, () => {
-            this._debounceTimeoutId = null;
-
-            const previousDefault = this._currentDefault;
-            this.refresh();
-            if (this._currentDefault !== previousDefault)
-                this._notifyChange(this._currentDefault);
-
+    _scheduleRefresh() {
+        // Monitors emit several events for a single change
+        if (this._debounceSourceId)
+            GLib.Source.remove(this._debounceSourceId);
+        this._debounceSourceId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, CHANGE_DEBOUNCE_MS, () => {
+            this._debounceSourceId = 0;
+            this._refresh();
             return GLib.SOURCE_REMOVE;
         });
     }
 
-    /**
-     * Notifies all registered callbacks of browser change
-     * @param {string} browserId - New browser ID
-     * @private
-     */
-    _notifyChange(browserId) {
-        for (const callback of this._changeCallbacks) {
-            try {
-                callback(browserId);
-            } catch (e) {
-                console.error(`Browser Switcher: Callback error: ${e.message}`);
-            }
+    _detect() {
+        const defaultApp = Gio.AppInfo.get_default_for_type(WEB_CONTENT_TYPE, false);
+        const defaultId = defaultApp ? defaultApp.get_id() : null;
+        const browsers = [];
+
+        for (const appInfo of Gio.AppInfo.get_all_for_type(WEB_CONTENT_TYPE)) {
+            if (!appInfo.should_show() || !isWebBrowser(appInfo))
+                continue;
+
+            // The same browser can ship several .desktop files, e.g.
+            // google-chrome.desktop and google-chrome-stable.desktop.
+            // Keep the one that is the current default.
+            const duplicateIndex = browsers.findIndex(b =>
+                b.id === appInfo.get_id() || b.name === appInfo.get_display_name());
+            if (duplicateIndex === -1)
+                browsers.push(toBrowser(appInfo));
+            else if (appInfo.get_id() === defaultId)
+                browsers[duplicateIndex] = toBrowser(appInfo);
         }
+
+        // The default can be a hidden handler, e.g. the NoDisplay
+        // userapp-Firefox-*.desktop that Firefox creates when it makes itself
+        // the default. List it so the menu and panel show the real default.
+        if (defaultApp && !browsers.some(b => b.id === defaultId))
+            browsers.push(toBrowser(defaultApp));
+
+        if (browsers.length === 0)
+            console.warn('Browser Switcher: No browsers found');
+
+        // get_all_for_type() puts the default first; a fixed order keeps the
+        // menu stable and avoids rebuilding it on every switch.
+        browsers.sort((a, b) => a.name.localeCompare(b.name));
+
+        this._browsers = browsers;
+        this._defaultBrowserId = defaultId;
     }
-
-    /**
-     * Cleans up resources
-     */
-    destroy() {
-        if (this._debounceTimeoutId) {
-            GLib.source_remove(this._debounceTimeoutId);
-            this._debounceTimeoutId = null;
-        }
-
-        if (this._appInfoMonitor) {
-            this._appInfoMonitor.disconnectObject(this);
-            this._appInfoMonitor = null;
-        }
-
-        if (this._fileMonitor) {
-            this._fileMonitor.disconnectObject(this);
-            this._fileMonitor.cancel();
-            this._fileMonitor = null;
-        }
-
-        this._changeCallbacks = [];
-        this._browsers = [];
-        this._currentDefault = null;
-    }
-}
-
-export { BrowserManager };
+});
