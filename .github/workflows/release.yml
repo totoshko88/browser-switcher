@@ -13,11 +13,11 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Extract version from tag
         id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
 
       - name: Extract changelog for version
         id: changelog
@@ -43,8 +43,8 @@ jobs:
 
       - name: Build extension package
         run: |
-          # Create zip manually (gnome-extensions pack may not be available on CI)
-          glib-compile-schemas schemas
+          # Same file set as `gnome-extensions pack`. GNOME Shell 44+ compiles
+          # the schema on install, so gschemas.compiled is not shipped.
           zip -r browser-switcher@totoshko88.github.io.shell-extension.zip \
             extension.js \
             browserManager.js \
@@ -53,10 +53,10 @@ jobs:
             prefs.js \
             metadata.json \
             stylesheet.css \
-            schemas
+            schemas/org.gnome.shell.extensions.browser-switcher.gschema.xml
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           name: Browser Switcher v${{ steps.version.outputs.VERSION }}
           body_path: release_notes.md

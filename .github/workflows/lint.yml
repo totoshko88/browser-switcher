@@ -1,0 +1,36 @@
+name: Lint
+on:
+  push:
+    branches:
+      - '**'
+    tags-ignore:
+      - '**'
+  pull_request:
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+      - name: ESLint
+        run: npx --yes eslint@10 --max-warnings=0 .
+      - name: Validate metadata.json
+        run: |
+          python3 - <<'EOF'
+          import json, re
+          meta = json.load(open('metadata.json'))
+          assert 'version' not in meta, 'version is managed by extensions.gnome.org'
+          assert re.fullmatch(r'(?!^[. ]+$)[a-zA-Z0-9 .]{1,16}', meta['version-name']), 'invalid version-name'
+          print('metadata.json OK:', meta['version-name'], meta['shell-version'])
+          EOF
+      - name: Validate GSettings schema
+        run: |
+          if ! command -v glib-compile-schemas >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends libglib2.0-bin
+          fi
+          glib-compile-schemas --strict --dry-run schemas
